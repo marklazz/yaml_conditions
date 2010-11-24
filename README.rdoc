@@ -1,34 +1,59 @@
 yaml_conditions
 -----------------------
 -----------------------
-This is a tool for allowing queries based on object's attributes, which were serialized using YAML on relational databases (currently only MySQL is supported).
+This is a tool for allowing queries based on object's attributes, which were serialized using YAML on relational databases (currently MySQL and Postgres are supported).
+
+Frameworks supported
+--------------------
+The idea is to support multiple ORMs. Currently we are only supporting ActiveRecord (version 2.x). We are working on extending support for ActiveRecord version 3.x, and then working on the integration with Datamapper.
 
 Usage
 -----
+We extend AR#find to allow a new option :yaml_conditions. If this new option is not present, we delegate the work to the default implementation.
 
-Model...
+yaml_conditions expects a Hash with all the key/values you want to filter the serialized object.
+
+Below I summarized some samples so you can see how I use it.
+
+Model.find(:all, :yaml_conditions => { :handler => { :client_id => 13817 } })
+
+Model.find(:first, :yaml_conditions => { :handler => { :method => :new_registration_email, :client_id => 13817 }})
+
+Model.find(:first, :yaml_conditions => { :handler => { :object => 'CLASS:NotificationMailer' } })
+
+Model.find(:first, :yaml_conditions => { :handler => { :object => 'CLASS:NotificationMailer', :method => :deliver_new_registration }})
+
+Model.find(:first, :yaml_conditions => { :handler => { :object => 'CLASS:NotificationMailer', :method => :deliver_new_registration }}, :conditions => { :priority => 0, :attempts => 0 })
+
+BTW: All methods ActiveRecord::Base#{last, first, all} rely on ActiveRecord::Base#find, so we can use yaml_conditions with these methods too. As an example: 
+Model.all(:yaml_conditions => { :handler => { :client_id => 13817 } }) behaves the same way as the first sample explained below.
 
 delayed_job
 -----------
-A typical case is using it in conjunction with delayed_job gem. So, here it is a sample of how a query would look like:
+Just to give you a little background, I build this gem/plugin just to filter my YAML objects created via delayed_job plugin ;)
 
-Delayed::Job.find...
+So, I added some custom magic for filtering Delayed::Job objects, like this:
+
+Delayed::Job.first(:yaml_conditions => { :class => 'NotificationMailer', :handler => { :method => :new_registration, :args => [ User.find(1), '*', '*' ] } })
+
+As you probably realize, '*' is interpreted (for Delayed::Job instances) as a wildcard.
 
 Installation
 -------------
 
-$ gem install yaml_conditions
+$ ruby script/plugin install git://github.com/marklazz/yaml_conditions.git)
+
+OR install it as a gem
+
+$ [sudo] gem install yaml_conditions
 
 License
 -------
 
-Copyright (c) 2010 Michel Martens
+Copyright (c) 2010 Marcelo Giorgi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-Powered by the Dedicated Servers and
-Cloud Computing of Rackspace Hosting®

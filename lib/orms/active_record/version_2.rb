@@ -47,12 +47,13 @@ module Orms
       elsif object.respond_to?(key.to_sym)
         object.send(key)
       end
-
       if value.is_a?(String)
         __yaml_load_object_recursively__(value)
       else
         value
       end
+    rescue
+        nil
     end
 
     def __yaml_load_object_recursively__(object)
@@ -60,10 +61,10 @@ module Orms
       if yaml_object.respond_to?(:value) && yaml_object.respond_to?(:type_id) && yaml_object.type_id == 'struct'
         yaml_object = yaml_object.value
         yaml_object = yaml_object.keys.inject(yaml_object) do |yobject, key|
-          yobject[key] = yobject[key].is_a?(Symbol) ? yobject[key] : __yaml_load_object_recursively__(yobject[key])
+          yobject[key] = yobject[key].is_a?(String) ? __yaml_load_object_recursively__(yobject[key]) : yobject[key]
           yobject
         end
-        yaml_object[:klazz] = Struct
+        yaml_object[:class] = yaml_object.class.to_s
         yaml_object
       else
         yaml_object
@@ -88,8 +89,10 @@ module Orms
     end
 
     def __yaml_same_class__(class_string, nested_value)
-      klazz = class_string.constantize rescue nil
-      klazz.present? && (nested_value.is_a?(klazz) || nested_value.class.ancestors.include?(klazz) || nested_value.respond_to?(:[]) && nested_value[:klazz] == klazz)
+      klazz_s = class_string.gsub('Struct::', '')
+      klazz =  klazz_s.constantize rescue nil
+      struct_klazz = nested_value.class.to_s[/^Struct::(.*)$/, 1]
+      klazz.present? && nested_value.is_a?(klazz) || struct_klazz.present? && struct_klazz == klazz_s
     end
 
     def __filter_yaml_attributes_to_check_on__(yaml_conditions)
@@ -127,6 +130,10 @@ module Orms
       yaml_conditions.symbolize_keys! if yaml_conditions.is_a?(Hash)
       options.merge!({ :conditions => __join_yaml_conditions__(sql_conditions, __build_yaml_conditions__(yaml_conditions)) })
     end
+  end
+
+  module DelayedJob
+    extend self
   end
 end
 

@@ -10,6 +10,12 @@ describe Orms::ActiveRecordVersion2 do
     User.destroy_all
   end
 
+  describe 'Delayed::Job#find' do
+    subject { Delayed::Job.first(:yaml_conditions => { :class => 'NotificationMailer', :handler => { :method => :new_registration, :args => [ User.find(1), '*', '*' ] } }) }
+    context 'test magic' do
+      it { pending }
+    end
+  end
   describe '#find' do
    context 'there is a Job(data: #User{:name => marcelo})' do
 
@@ -137,9 +143,9 @@ describe Orms::ActiveRecordVersion2 do
     context 'there is a Job(data: #Struct{:method => :new_email, :handler => User#(email => marcelo) })' do
 
       before do
-        @struct = Struct.new(:method, :handler, :email)
+        @struct = Struct.new('MyStruct', :method, :handler, :email, :number, :some_rate)
         @user = User.create(:name => 'marcelo', :address => 'address1')
-        struct_instance = @struct.new(:new_email, @user.to_yaml, 'foo@gmail.com')
+        struct_instance = @struct.new(:new_email, @user.to_yaml, 'foo@gmail.com', 4, 0.005)
         @job = Job.create(:name => 'job1', :data => struct_instance)
         @yaml_conditions = {}
         @conditions = {}
@@ -147,12 +153,76 @@ describe Orms::ActiveRecordVersion2 do
 
       subject { Job.find(:first, :yaml_conditions => @yaml_conditions, :conditions => @conditions) }
 
+      context 'filter for the proper class but wrong float' do
+        before do
+          @yaml_conditions = { :data => { :class => 'MyStruct', :some_rate =>  0.003 } }
+        end
+
+        it { should be_nil }
+      end
+
+      context 'filter for the proper class and float number' do
+        before do
+          @yaml_conditions = { :data => { :class => 'MyStruct', :some_rate =>  0.005 } }
+        end
+
+        it { should == @job }
+      end
+
+      context 'filter for the class of the serialized field' do
+        before do
+          @yaml_conditions = { :data => { :class => 'Struct::MyStruct' } }
+        end
+
+        it { should == @job }
+      end
+
+      context 'filter for the class of the serialized field' do
+        before do
+          @yaml_conditions = { :data => { :class => 'MyStruct' } }
+        end
+
+        it { should == @job }
+      end
+
       context 'filter for string attribute stored on the serialized field' do
         before do
           @yaml_conditions = { :data => { :class => 'Struct', :email => 'foo@gmail.com' } }
         end
 
         it { should == @job }
+      end
+
+      context 'filter by the proper symbol, an integer and a float number' do
+        before do
+          @yaml_conditions = { :data => { :class => 'Struct', :method => :new_email, :number => 4, :some_rate => 0.005 } }
+        end
+
+        it { should == @job }
+      end
+
+      context 'filter by the correct symbol and integer, but a wrong float number' do
+        before do
+          @yaml_conditions = { :data => { :class => 'Struct', :method => :new_email, :number => 4, :some_rate => 0.002 } }
+        end
+
+        it { should be_nil }
+      end
+
+      context 'filter by the proper symbol and number' do
+        before do
+          @yaml_conditions = { :data => { :class => 'Struct', :method => :new_email, :number => 4 } }
+        end
+
+        it { should == @job }
+      end
+
+      context 'filtering with the correct symbol and a wrong number' do
+        before do
+          @yaml_conditions = { :data => { :class => 'Struct', :method => :new_email, :number => 3 } }
+        end
+
+        it { should be_nil }
       end
 
       context 'filter for symbol attribute stored on the serialized field' do
