@@ -1,5 +1,6 @@
 print "Using native Postgres\n"
 require 'logger'
+$ADAPTER = 'postgresql'
 
 ActiveRecord::Base.logger = Logger.new("debug.log")
 
@@ -7,10 +8,10 @@ ActiveRecord::Base.logger = Logger.new("debug.log")
 
 ActiveRecord::Base.configurations = {
   'yaml_conditions_db' => {
-    :adapter  => 'postgresql',
-    :username => 'yaml_conditions',
-    :encoding => 'utf8',
-    :database => 'yaml_conditions_db',
+   'adapter'   => 'postgresql',
+   'username'  => 'yaml_conditions',
+   'encoding'  => 'utf8',
+   'database'  => 'yaml_conditions_db',
   },
 }
 

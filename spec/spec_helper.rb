@@ -4,3 +4,10 @@ if ENV['VERSION_3']
 else
   gem 'activesupport', [ '>= 2.3.4', '<= 2.3.10' ], :require => 'active_support'
 end
+
+def with_warnings(flag)
+  old_verbose, $VERBOSE = $VERBOSE, flag
+  yield
+  ensure
+    $VERBOSE = old_verbose
+end

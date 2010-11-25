@@ -1,7 +1,9 @@
 require File.join( File.dirname(__FILE__), '..', '..', '..', 'ar_spec_helper')
 require File.join( File.dirname(__FILE__), '..', '..', '..', 'models', 'job')
 require File.join( File.dirname(__FILE__), '..', '..', '..', 'models', 'user')
+require File.join( File.dirname(__FILE__), '..', '..', '..', 'models', 'user_data')
 require File.join( File.dirname(__FILE__), '..', '..', '..', 'models', 'priority')
+require File.join( File.dirname(__FILE__), '..', '..', '..', 'models', 'period')
 
 describe Orms::ActiveRecordVersion2 do
 
@@ -10,12 +12,6 @@ describe Orms::ActiveRecordVersion2 do
     User.destroy_all
   end
 
-  describe 'Delayed::Job#find' do
-    subject { Delayed::Job.first(:yaml_conditions => { :class => 'NotificationMailer', :handler => { :method => :new_registration, :args => [ User.find(1), '*', '*' ] } }) }
-    context 'test magic' do
-      it { pending }
-    end
-  end
   describe '#find' do
    context 'there is a Job(data: #User{:name => marcelo})' do
 
@@ -143,7 +139,7 @@ describe Orms::ActiveRecordVersion2 do
     context 'there is a Job(data: #Struct{:method => :new_email, :handler => User#(email => marcelo) })' do
 
       before do
-        @struct = Struct.new('MyStruct', :method, :handler, :email, :number, :some_rate)
+        with_warnings(nil) { @struct = Struct.new('MyStruct', :method, :handler, :email, :number, :some_rate) }
         @user = User.create(:name => 'marcelo', :address => 'address1')
         struct_instance = @struct.new(:new_email, @user.to_yaml, 'foo@gmail.com', 4, 0.005)
         @job = Job.create(:name => 'job1', :data => struct_instance)
@@ -279,6 +275,71 @@ describe Orms::ActiveRecordVersion2 do
         end
 
         it { should be_nil }
+      end
+
+      context 'query a nested ActiveRecord value' do
+        before do
+          period = Period.create(:year => 2000)
+          user_data = UserData.create(:social_number => 123, :title => 'Computer Engineer', :period => period)
+          user = User.create(:name => 'marcelo', :details => user_data)
+          @complex_job = Job.create(:name => 'job1', :data => { :owner => user })
+        end
+
+        context 'query using correct social_number' do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :social_number => 123 } } } }
+          end
+
+          it { should == @complex_job }
+        end
+
+        context 'query using correct social_number' do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :social_number => 124 } } } }
+          end
+
+          it { should be_nil }
+        end
+
+        context 'query using the UserData class' do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData } } } }
+          end
+
+          it { should == @complex_job }
+        end
+
+        context 'query using the UserData class and title and social_number' do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData, :title =>  'Computer Engineer' } } } }
+          end
+
+          it { should == @complex_job }
+        end
+
+        context 'query using the UserData class, social_number and wrong title' do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData, :title =>  'Teacher' } } } }
+          end
+
+          it { should be_nil }
+        end
+
+        context 'query using the UserData class and title and social_number' do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData, :title =>  'Computer Engineer', :period => { :class => Period, :year => 2000 } } } } }
+          end
+
+          it { should == @complex_job }
+        end
+
+        context 'query using NotSerializedField' do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData, :title =>  'Computer Engineer', :period => { :class => Period, :year => Yaml::NotSerializedField.new(2000) } } } } }
+          end
+
+          it { should == @complex_job }
+        end
       end
     end
   end

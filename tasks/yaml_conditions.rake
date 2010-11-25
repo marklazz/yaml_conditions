@@ -61,6 +61,7 @@ for adapter in %w( mysql postgresql )
     end
 
   namespace adapter do
+    #task "spec_#{adapter}" => [ "rebuild_#{adapter}_databases", "spec_#{adapter}_def" ]
     task :spec => "spec_#{adapter}"
   end
 end
@@ -77,7 +78,7 @@ namespace :mysql do
 
   desc 'Drop the MySQL test databases'
   task :drop_databases do
-    %x( mysqladmin --user=#{MYSQL_DB_USER} -f drop yaml_contidions_db )
+    %x( mysqladmin -u#{MYSQL_DB_USER} -f drop yaml_conditions_db )
   end
 
   desc 'Rebuild the MySQL test databases'

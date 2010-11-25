@@ -1,54 +1,61 @@
-yaml_conditions
------------------------
------------------------
-This is a tool for allowing queries based on object's attributes, which were serialized using YAML on relational databases (currently MySQL and Postgres are supported).
+= yaml_conditions
 
-Frameworks supported
---------------------
+This is a tool for allowing queries based on serialized objects (via YAML) on relational databases (currently MySQL and Postrgres are supported).
+
+== Frameworks supported
+
 The idea is to support multiple ORMs. Currently we are only supporting ActiveRecord (version 2.x). We are working on extending support for ActiveRecord version 3.x, and then working on the integration with Datamapper.
 
-Usage
------
-We extend AR#find to allow a new option :yaml_conditions. If this new option is not present, we delegate the work to the default implementation.
+== Usage (for ActiveRecord 2.x only for now)
 
-yaml_conditions expects a Hash with all the key/values you want to filter the serialized object.
+Basically, we extend AR#find to allow a new option :yaml_conditions. If :yaml_contitions is not present, #find will behave exactly as it used to.
+
+yaml_conditions parameter expects a Hash with all the key/values you want to filter the serialized object.
 
 Below I summarized some samples so you can see how I use it.
 
-Model.find(:all, :yaml_conditions => { :handler => { :client_id => 13817 } })
+  Company.find(:all, :yaml_conditions => { :address => { :street => '5551 LEOPARD ST' } })
 
-Model.find(:first, :yaml_conditions => { :handler => { :method => :new_registration_email, :client_id => 13817 }})
+  Company.find(:all, :yaml_conditions => { :status => :active })
 
-Model.find(:first, :yaml_conditions => { :handler => { :object => 'CLASS:NotificationMailer' } })
+  Company.find(:first, :yaml_conditions => { :data => { { :street => '5551 LEOPARD ST' }, :status => :active } })
 
-Model.find(:first, :yaml_conditions => { :handler => { :object => 'CLASS:NotificationMailer', :method => :deliver_new_registration }})
+  Company.find(:first, :yaml_conditions => { :data => { :owner => { :class => User, :name => 'Marcelo' } } })
 
-Model.find(:first, :yaml_conditions => { :handler => { :object => 'CLASS:NotificationMailer', :method => :deliver_new_registration }}, :conditions => { :priority => 0, :attempts => 0 })
+  Company.find(:first, :yaml_conditions => { :data => {  { :street => '5551 LEOPARD ST' }, :status => :active }, :conditions => [ 'branches_counter > ?', 3] )
 
-BTW: All methods ActiveRecord::Base#{last, first, all} rely on ActiveRecord::Base#find, so we can use yaml_conditions with these methods too. As an example: 
-Model.all(:yaml_conditions => { :handler => { :client_id => 13817 } }) behaves the same way as the first sample explained below.
+As you can see from the last sample, both yaml_conditions and conditions will be merged in order to find the expected results.
 
-delayed_job
------------
+  Company.find(:last, :yaml_conditions => { :data => { :user => { :last_name => 'Marcelo', :address => { :city => Yaml::NotSerializedField.new('Rio Negro') } } } })
+
+On this last sample, the city attribute can be traversed on memory but it is not saved on the serialized field (i.e. handler), so we want to indicate that to avoid building an invalid SQL.
+
+BTW: All methods ActiveRecord::Base#{last, first, all} rely on ActiveRecord::Base#find, so we can use yaml_conditions with these methods too. As an example:
+Company.all(:yaml_conditions => { :data => { :address => { :street => '5551 LEAOPARD ST' } } }) behaves the same way as the first sample explained below.
+
+== delayed_job
+
 Just to give you a little background, I build this gem/plugin just to filter my YAML objects created via delayed_job plugin ;)
 
 So, I added some custom magic for filtering Delayed::Job objects, like this:
 
-Delayed::Job.first(:yaml_conditions => { :class => 'NotificationMailer', :handler => { :method => :new_registration, :args => [ User.find(1), '*', '*' ] } })
+  Delayed::Job.first(:yaml_conditions => { :class => NotificationMailer, :handler => { :method => :new_registration, :args => [ User.find(1), '*', '*' ] } })
+
+  Delayed::Job.first(:yaml_conditions => { :handler => { :args => [ { :user => { :last_name => 'Marcelo', :address => { :city => 'Rio Negro' } } } ] } })
 
 As you probably realize, '*' is interpreted (for Delayed::Job instances) as a wildcard.
 
-Installation
--------------
+== Installation
 
-$ ruby script/plugin install git://github.com/marklazz/yaml_conditions.git)
+  $ ruby script/plugin install git://github.com/marklazz/yaml_conditions.git)
 
 OR install it as a gem
 
-$ [sudo] gem install yaml_conditions
+  $ [sudo] gem install yaml_conditions
 
-License
--------
+Enjoy!
+
+== License
 
 Copyright (c) 2010 Marcelo Giorgi
 

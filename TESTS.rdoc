@@ -1,0 +1,13 @@
+Before running the tests, you must create a user called yaml_conditions (with no password) for mysql (and/or postgresql).
+
+Then to run the suite you should be able to do:
+
+rake spec (which will run both suites for mysql and postgres)
+
+Or run them individually:
+
+rake mysql:spec
+
+rake postgres:spec
+
+Enjoy!
