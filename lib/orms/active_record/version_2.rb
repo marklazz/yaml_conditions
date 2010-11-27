@@ -19,14 +19,14 @@ module Orms
       adapted_args = args << refactor_options(options)
       selector = adapted_args.shift
       result = find_without_yaml_conditions(:all, *adapted_args).select do |o|
-          __check_yaml_nested_hierarchy__(o, yaml_conditions)
+          __check_yaml_nested_hierarchy__(o, __prepare_yaml_conditions__(yaml_conditions))
       end
       selector == :all ? result : result.send(selector.to_sym)
     end
 
     def refactor_options(options)
       sql_conditions = sanitize_sql(options.delete(:conditions))
-      yaml_conditions = options.delete(:yaml_conditions)
+      yaml_conditions = __prepare_yaml_conditions__(options.delete(:yaml_conditions))
       yaml_conditions.symbolize_keys! if yaml_conditions.is_a?(Hash)
       options.merge!({ :conditions => __join_yaml_conditions__(sql_conditions, __build_yaml_conditions__(yaml_conditions)) })
     end

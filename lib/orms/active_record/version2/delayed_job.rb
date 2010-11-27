@@ -16,6 +16,11 @@ module Orms
         AR_STRING_FORMAT    = /^AR\:([A-Z][\w\:]+)\:(\d+)$/
         LOAD_AR_STRING_FORMAT    = /^LOAD;([A-Z][\w\:]+);(\d+)$/
 
+        def __prepare_yaml_conditions__(yaml_conditions)
+          return yaml_conditions if yaml_conditions.has_key?(:handler) || yaml_conditions.has_key?('handler')
+          { :handler => yaml_conditions }
+        end
+
         def __delayed_job_ar_to_string_(obj)
           Delayed::PerformableMethod.new(obj, :to_s, []).object
         end

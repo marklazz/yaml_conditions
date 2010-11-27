@@ -39,11 +39,18 @@ Just to give you a little background, I build this gem/plugin just to filter my 
 
 So, I added some custom magic for filtering Delayed::Job objects, like this:
 
-  Delayed::Job.first(:yaml_conditions => { :class => NotificationMailer, :handler => { :method => :new_registration, :args => [ User.find(1), '*', '*' ] } })
+  Delayed::Job.first(:yaml_conditions => { :handler => { :method => :new_registration, :args => [ User.find(1), '*', '*' ] } })
 
   Delayed::Job.first(:yaml_conditions => { :handler => { :args => [ { :user => { :last_name => 'Marcelo', :address => { :city => 'Rio Negro' } } } ] } })
 
 As you probably realize, '*' is interpreted as a wildcard.
+
+If :handler is not provided as top level key of the hash, then the hash will be wrapped inside a handler key. For example, the following queries return the same results:
+
+  Delayed::Job.last(:yaml_conditions => { :handler => { :method => :new_registration }})
+  Delayed::Job.last(:yaml_conditions => { :method => :new_registration })
+
+This wrapping magic it's only available for Delayed::Job for now.
 
 == Installation
 

@@ -15,6 +15,10 @@ module Yaml
       end
     end
 
+    def __prepare_yaml_conditions__(yaml_conditions)
+      yaml_conditions
+    end
+
     def __serialize__to_yaml_value__(v)
       return '' if v.nil?
       v_s = v.to_s

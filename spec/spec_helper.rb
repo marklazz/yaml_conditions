@@ -5,9 +5,20 @@ else
   gem 'activesupport', [ '>= 2.3.4', '<= 2.3.10' ], :require => 'active_support'
 end
 
-def with_warnings(flag)
-  old_verbose, $VERBOSE = $VERBOSE, flag
-  yield
+module Kernel
+  def silence_warnings
+    old_verbose, $VERBOSE = $VERBOSE, nil
+    yield
   ensure
     $VERBOSE = old_verbose
+  end
+
+  def without_output
+    orig_stdout = $stderr
+    # redirect stdout to /dev/null
+    $stderr = File.new('/dev/null', 'w')
+    yield
+    # restore stdout
+    $stderr = orig_stdout
+  end
 end

@@ -139,7 +139,7 @@ describe Orms::ActiveRecordVersion2 do
     context 'there is a Job(data: #Struct{:method => :new_email, :handler => User#(email => marcelo) })' do
 
       before do
-        with_warnings(nil) { @struct = Struct.new('MyStruct', :method, :handler, :email, :number, :some_rate) }
+        silence_warnings { @struct = Struct.new('MyStruct', :method, :handler, :email, :number, :some_rate) }
         @user = User.create(:name => 'marcelo', :address => 'address1')
         struct_instance = @struct.new(:new_email, @user.to_yaml, 'foo@gmail.com', 4, 0.005)
         @job = Job.create(:name => 'job1', :data => struct_instance)
