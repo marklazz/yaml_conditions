@@ -24,11 +24,11 @@ Below I summarized some samples so you can see how I use it.
 
   Company.find(:first, :yaml_conditions => { :data => {  { :street => '5551 LEOPARD ST' }, :status => :active }, :conditions => [ 'branches_counter > ?', 3] )
 
-As you can see from the last sample, both yaml_conditions and conditions will be merged in order to find the expected results.
+As you can see on this sample, both yaml_conditions and conditions will be merged in order to find the expected results.
 
   Company.find(:last, :yaml_conditions => { :data => { :user => { :last_name => 'Marcelo', :address => { :city => Yaml::NotSerializedField.new('Rio Negro') } } } })
 
-On this last sample, the city attribute can be traversed on memory but it is not saved on the serialized field (i.e. handler), so we want to indicate that to avoid building an invalid SQL.
+On this last sample, the city attribute will be used to filter the objects on memory but it is not used to build the SQL query. This can be handy if we want to filter based on a field (i.e. city) that is not serialized within the yaml object within the database, but can be traversed through messaging between objects.
 
 BTW: All methods ActiveRecord::Base#{last, first, all} rely on ActiveRecord::Base#find, so we can use yaml_conditions with these methods too. As an example:
 Company.all(:yaml_conditions => { :data => { :address => { :street => '5551 LEAOPARD ST' } } }) behaves the same way as the first sample explained below.
@@ -43,7 +43,7 @@ So, I added some custom magic for filtering Delayed::Job objects, like this:
 
   Delayed::Job.first(:yaml_conditions => { :handler => { :args => [ { :user => { :last_name => 'Marcelo', :address => { :city => 'Rio Negro' } } } ] } })
 
-As you probably realize, '*' is interpreted (for Delayed::Job instances) as a wildcard.
+As you probably realize, '*' is interpreted as a wildcard.
 
 == Installation
 

@@ -144,10 +144,11 @@ describe Orms::ActiveRecordVersion2 do
         struct_instance = @struct.new(:new_email, @user.to_yaml, 'foo@gmail.com', 4, 0.005)
         @job = Job.create(:name => 'job1', :data => struct_instance)
         @yaml_conditions = {}
+        @selector = :first
         @conditions = {}
       end
 
-      subject { Job.find(:first, :yaml_conditions => @yaml_conditions, :conditions => @conditions) }
+      subject { Job.find(@selector, :yaml_conditions => @yaml_conditions, :conditions => @conditions) }
 
       context 'filter for the proper class but wrong float' do
         before do
@@ -281,13 +282,13 @@ describe Orms::ActiveRecordVersion2 do
         before do
           period = Period.create(:year => 2000)
           user_data = UserData.create(:social_number => 123, :title => 'Computer Engineer', :period => period)
-          user = User.create(:name => 'marcelo', :details => user_data)
-          @complex_job = Job.create(:name => 'job1', :data => { :owner => user })
+          user = User.create(:name => 'marklazz', :details => user_data)
+          @complex_job = Job.create(:name => 'cpmplex_job', :data => { :owner => user })
         end
 
         context 'query using correct social_number' do
           before do
-            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :social_number => 123 } } } }
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marklazz', :details => { :social_number => 123 } } } }
           end
 
           it { should == @complex_job }
@@ -295,7 +296,7 @@ describe Orms::ActiveRecordVersion2 do
 
         context 'query using correct social_number' do
           before do
-            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :social_number => 124 } } } }
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marklazz', :details => { :social_number => 124 } } } }
           end
 
           it { should be_nil }
@@ -303,7 +304,7 @@ describe Orms::ActiveRecordVersion2 do
 
         context 'query using the UserData class' do
           before do
-            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData } } } }
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marklazz', :details => { :class => UserData } } } }
           end
 
           it { should == @complex_job }
@@ -311,7 +312,7 @@ describe Orms::ActiveRecordVersion2 do
 
         context 'query using the UserData class and title and social_number' do
           before do
-            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData, :title =>  'Computer Engineer' } } } }
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marklazz', :details => { :class => UserData, :title =>  'Computer Engineer' } } } }
           end
 
           it { should == @complex_job }
@@ -319,7 +320,7 @@ describe Orms::ActiveRecordVersion2 do
 
         context 'query using the UserData class, social_number and wrong title' do
           before do
-            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData, :title =>  'Teacher' } } } }
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marklazz', :details => { :class => UserData, :title =>  'Teacher' } } } }
           end
 
           it { should be_nil }
@@ -327,15 +328,85 @@ describe Orms::ActiveRecordVersion2 do
 
         context 'query using the UserData class and title and social_number' do
           before do
-            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData, :title =>  'Computer Engineer', :period => { :class => Period, :year => 2000 } } } } }
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marklazz', :details => { :class => UserData, :title =>  'Computer Engineer', :period => { :class => Period, :year => 2000 } } } } }
           end
 
           it { should == @complex_job }
         end
 
-        context 'query using NotSerializedField' do
+        context "query using wrong value on a NotSerializedField" do
           before do
-            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marcelo', :details => { :class => UserData, :title =>  'Computer Engineer', :period => { :class => Period, :year => Yaml::NotSerializedField.new(2000) } } } } }
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marklazz', :details => { :class => UserData, :title =>  'Computer Engineer', :period => { :class => Period, :year => Yaml::NotSerializedField.new(1542) } } } } }
+          end
+
+          it { should be_nil }
+
+          it 'should not include the NotSerializedField in the generated sql' do
+            Job.__build_yaml_conditions__(@yaml_conditions).should_not include('city')
+            Job.__build_yaml_conditions__(@yaml_conditions).should_not include('1542')
+          end
+
+          it 'should include the standard fields in the generated sql' do
+            Job.__build_yaml_conditions__(@yaml_conditions).should include('name')
+            Job.__build_yaml_conditions__(@yaml_conditions).should include('marklazz')
+          end
+        end
+
+        context "query using NotSerializedField for an attribute not present on yaml's column" do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marklazz', :details => { :class => UserData, :title =>  'Computer Engineer', :period => { :class => Period, :year => Yaml::NotSerializedField.new(2000) } } } } }
+          end
+
+          it { should == @complex_job }
+
+          it 'should not include the NotSerializedField in the generated sql' do
+            Job.__build_yaml_conditions__(@yaml_conditions).should_not include('2000')
+            Job.__build_yaml_conditions__(@yaml_conditions).should_not include('city')
+          end
+
+          it 'should include the standard fields in the generated sql' do
+            Job.__build_yaml_conditions__(@yaml_conditions).should include('marklazz')
+            Job.__build_yaml_conditions__(@yaml_conditions).should include('name')
+          end
+        end
+
+        context "query using NotSerializedField for an attribute present on yaml's column" do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => Yaml::NotSerializedField.new('marklazz'), :details => { :class => UserData, :title =>  'Computer Engineer' } } } }
+          end
+
+          it { should == @complex_job }
+
+          it 'should not include the NotSerializedField in the generated sql' do
+            Job.__build_yaml_conditions__(@yaml_conditions).should_not include('name')
+            Job.__build_yaml_conditions__(@yaml_conditions).should_not include('marklazz')
+          end
+        end
+
+        context "query using wildcard and on nested structure" do
+          before do
+            2.times do
+              user_data = UserData.create(:social_number => rand(100), :title => 'Computer Engineer')
+              user = User.create(:name => "marklazz_#{rand(100)}", :details => user_data)
+              job = Job.create(:name => "cpmplex_job_#{rand(100)}", :data => { :owner => user })
+            end
+            user_data = UserData.create(:social_number => rand(100), :title => 'Teacher')
+            user = User.create(:name => "marklazz_#{rand(100)}", :details => user_data)
+            job = Job.create(:name => "cpmplex_job_#{rand(100)}", :data => { :owner => user })
+            @selector = :all
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => '*', :details => { :class => UserData, :title =>  'Computer Engineer' } } } }
+          end
+
+          it 'should have a total of 5 job' do
+            Job.count.should == 5
+          end
+
+          its(:length) { should == 3 }
+        end
+
+        context "query using wildcard and NotSerializedField" do
+          before do
+            @yaml_conditions = { :data => { :class => Hash, :owner => { :name => 'marklazz', :details => { :class => UserData, :title =>  'Computer Engineer', :period => { :class => Period, :year => '*' } } } } }
           end
 
           it { should == @complex_job }
