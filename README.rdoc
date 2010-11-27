@@ -47,8 +47,8 @@ As you probably realize, '*' is interpreted as a wildcard.
 
 If :handler is not provided as top level key of the hash, then the hash will be wrapped inside a handler key. For example, the following queries return the same results:
 
-  Delayed::Job.last(:yaml_conditions => { :handler => { :class => SimpleJob, :method => :new_registration }})
-  Delayed::Job.last(:yaml_conditions => { :class => SimpleJob, :method => :new_registration })
+  Delayed::Job.last(:yaml_conditions => { :handler => { :class => SimpleJob, :name => 'job_name', :kind => 'some_kind' }})
+  Delayed::Job.last(:yaml_conditions => { :class => SimpleJob , :name => 'job_name', :kind => 'some_kind' })
 
 This wrapping magic it's only available for Delayed::Job for now.
 

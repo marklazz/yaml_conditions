@@ -21,11 +21,10 @@ spec/cases/orms/active_record/version_2_spec.rb
 spec/connections/mysql/connection.rb
 spec/connections/postgresql/connection.rb
 spec/datamapper_spec_helper.rb
-spec/models/delayed/job.rb
-spec/models/delayed/performable_method.rb
 spec/models/job.rb
 spec/models/period.rb
 spec/models/priority.rb
+spec/models/support_classes.rb
 spec/models/user.rb
 spec/models/user_data.rb
 spec/schema.rb
