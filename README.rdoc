@@ -47,7 +47,7 @@ As you probably realize, '*' is interpreted as a wildcard.
 
 == Installation
 
-  $ ruby script/plugin install git://github.com/marklazz/yaml_conditions.git)
+  $ ruby script/plugin install git://github.com/marklazz/yaml_conditions.git
 
 OR install it as a gem
 
