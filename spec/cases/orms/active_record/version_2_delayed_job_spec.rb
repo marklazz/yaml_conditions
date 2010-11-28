@@ -305,5 +305,52 @@ describe ::Orms::ActiveRecordVersion2 do
 
           it { should be_nil }
         end
+
+    context "More on using wildcards and nested structures" do
+
+        before do
+          user = User.create(:name => 'marcelo')
+          @some_nested_job = Delayed::Job.enqueue Delayed::PerformableMethod.new(NotificationMailer, :deliver_admin_login, [ User.find_by_name('marcelo'), { :some => { :nested => 'strucutre' }} ] )
+        end
+
+        subject { Delayed::Job.first(:yaml_conditions => @yaml_conditions) }
+
+        context 'test nested structure with proper conditions' do
+
+          before do
+            @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', '*', { :some => { :nested => 'strucutre' } }] }
+          end
+
+          it { should == @some_nested_job }
+        end
+
+        context 'test nested structure with wrong method' do
+
+          before do
+            @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :bad_symbol, { :some => { :nested => 'strucutre' } }] }
+          end
+
+          it { should be_nil }
+        end
+
+        context 'test nested structure with wrong args' do
+          context 'bad string' do
+            before do
+              @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :bad_symbol, { :some => { :nested => 'bad_strucutre' } }] }
+            end
+
+            it { should be_nil }
+          end
+
+          context 'bad key' do
+            before do
+              @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :bad_symbol, { :some => { :bad_nested => 'strucutre' } }] }
+            end
+
+            it { should be_nil }
+          end
+        end
+    end
+
     end
 end if defined?(Delayed::Job)
