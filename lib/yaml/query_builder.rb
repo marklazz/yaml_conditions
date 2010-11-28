@@ -1,6 +1,8 @@
 module Yaml
   module QueryBuilder
 
+    ParseObjectFromYaml = /\!ruby\/\w+\:([^\s]+)/
+
     def __include_db_adapter_if_necessary__
       adapter_name = self.connection.adapter_name
       adapter_capitalized = adapter_name.upcase[0].chr + adapter_name.downcase[1..-1]
@@ -56,7 +58,16 @@ module Yaml
     end
 
     def __check_yaml_nested_hierarchy_on_list__(value, yaml_conditions)
-      return false if !value.is_a?(Array) || value.length != yaml_conditions.length
+      return false if !value.is_a?(Array)
+      yaml_conditions = if value.length != yaml_conditions.length
+        if value.length > yaml_conditions.length
+          yaml_conditions + (['*'] * (value.length - yaml_conditions.length))
+        else
+          yaml_conditions[0..-1+(value.length-yaml_conditions.length)]
+        end
+      else
+        yaml_conditions
+      end
       yaml_conditions.zip(value).inject(true) do |result, (cond, nested_value)|
           result &= __check_yaml_nested_hierarchy__(nested_value, cond)
       end
@@ -99,14 +110,32 @@ module Yaml
     end
 
     def __yaml_load_object_recursively__(object)
+      return nil if object.nil?
+      return object.map { |v| __yaml_load_object_recursively__(v) } if object.is_a?(Array)
+      if object.is_a?(Hash)
+        return object.keys.inject({}) do |result, k|
+          result[__yaml_load_object_recursively__(k).to_sym] = __yaml_load_object_recursively__(object[k])
+          result
+        end
+      elsif object.is_a?(Symbol)
+        return object
+      end
       yaml_object = __yaml_deserialize__(object)
-      if yaml_object.respond_to?(:value) && yaml_object.respond_to?(:type_id) && yaml_object.type_id == 'struct'
-        yaml_object = yaml_object.value
-        yaml_object = yaml_object.keys.inject(yaml_object) do |yobject, key|
-          yobject[key] = yobject[key].is_a?(String) ? __yaml_load_object_recursively__(yobject[key]) : yobject[key]
+      if yaml_object.is_a?(Struct) || (yaml_object.respond_to?(:value) && yaml_object.respond_to?(:type_id) && yaml_object.type_id == 'struct')
+        yaml_object = yaml_object.respond_to?(:value) ? yaml_object.value : yaml_object
+        keys = yaml_object.respond_to?(:members) ? yaml_object.members : yaml_object.keys
+        yaml_object = keys.inject(yaml_object) do |yobject, key|
+          value = yobject.respond_to?(key.to_sym) ? yobject.send(key.to_sym) : yobject[key]
+          yobject[key] = begin
+            if value.is_a?(Array) || value.is_a?(String)
+              __yaml_load_object_recursively__(value)
+            else
+              value
+            end
+          end
           yobject
         end
-        yaml_object[:class] = yaml_object.class.to_s
+        yaml_object[:class]=(yaml_object.class.to_s) unless yaml_object.is_a?(Struct)
         yaml_object
       else
         yaml_object

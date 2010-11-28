@@ -61,7 +61,7 @@ for adapter in %w( mysql postgresql )
     end
 
   namespace adapter do
-    task "spec_#{adapter}" => [ "rebuild_#{adapter}_databases" ]
+    #task "spec_#{adapter}" => [ "rebuild_#{adapter}_databases" ]
     task :spec => "spec_#{adapter}"
   end
 end

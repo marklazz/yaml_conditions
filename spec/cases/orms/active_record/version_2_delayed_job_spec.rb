@@ -10,7 +10,6 @@ rescue LoadError
   # not installed
 end
 
-
 describe ::Orms::ActiveRecordVersion2 do
 
   before do
@@ -27,6 +26,16 @@ describe ::Orms::ActiveRecordVersion2 do
         end
 
         subject { Delayed::Job.first(:yaml_conditions => @yaml_conditions) }
+
+        context 'test filter by class' do
+
+          before do
+            @yaml_conditions = { :class => Delayed::PerformableMethod }
+          end
+
+          it { should == @job }
+        end
+
 
         context 'test filter by args' do
 

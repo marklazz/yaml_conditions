@@ -1,9 +1,8 @@
 module Yaml
   module Conditions
     extend self
-    ParseObjectFromYaml = /\!ruby\/\w+\:([^\s]+)/
 
-    VERSION = '0.0.0.3'
+    VERSION = '0.0.0.4'
   end
 
   class NotSerializedField
