@@ -310,7 +310,7 @@ describe ::Orms::ActiveRecordVersion2 do
 
         before do
           user = User.create(:name => 'marcelo')
-          @some_nested_job = Delayed::Job.enqueue Delayed::PerformableMethod.new(NotificationMailer, :deliver_admin_login, [ User.find_by_name('marcelo'), { :some => { :nested => 'strucutre' }} ] )
+          @some_nested_job = Delayed::Job.enqueue Delayed::PerformableMethod.new(NotificationMailer, :deliver_admin_login, [ User.find_by_name('marcelo'), { :some => { :nested => 'structure' }} ] )
         end
 
         subject { Delayed::Job.first(:yaml_conditions => @yaml_conditions) }
@@ -318,7 +318,7 @@ describe ::Orms::ActiveRecordVersion2 do
         context 'test nested structure with proper conditions' do
 
           before do
-            @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', '*', { :some => { :nested => 'strucutre' } }] }
+            @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', '*', { :some => { :nested => 'structure' } }] }
           end
 
           it { should == @some_nested_job }
@@ -327,7 +327,7 @@ describe ::Orms::ActiveRecordVersion2 do
         context 'test nested structure with wrong method' do
 
           before do
-            @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :bad_symbol, { :some => { :nested => 'strucutre' } }] }
+            @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :deliver_admin_login, { :some => { :nested => 'structure' } }] }
           end
 
           it { should be_nil }
@@ -336,7 +336,7 @@ describe ::Orms::ActiveRecordVersion2 do
         context 'test nested structure with wrong args' do
           context 'bad string' do
             before do
-              @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :bad_symbol, { :some => { :nested => 'bad_strucutre' } }] }
+              @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :deliver_admin_login, { :some => { :nested => 'bad_structure' } }] }
             end
 
             it { should be_nil }
@@ -344,10 +344,26 @@ describe ::Orms::ActiveRecordVersion2 do
 
           context 'bad key' do
             before do
-              @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :bad_symbol, { :some => { :bad_nested => 'strucutre' } }] }
+              @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :bad_symbol, { :some => { :bad_nested => 'structure' } }] }
             end
 
             it { should be_nil }
+          end
+
+          context 'wrong hierarchy' do
+            before do
+              @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :deliver_admin_login, { :nested => 'structure' } ] }
+            end
+
+            it { should be_nil }
+          end
+
+          context 'wrong hierarchy but with :flat_check set to true' do
+            before do
+              @yaml_conditions = { :class => Delayed::PerformableMethod, :args => [ '*', :deliver_admin_login, { :nested => 'structure' } ], :flat_check => true }
+            end
+
+            it { should == @some_nested_job }
           end
         end
     end

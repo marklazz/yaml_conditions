@@ -262,6 +262,14 @@ describe Orms::ActiveRecordVersion2 do
         it { should be_nil }
       end
 
+      context "yaml_conditions that match key/value, WRONG hierarchy BUT flat_check => true" do
+        before do
+          @yaml_conditions = { :data => { :class => 'Struct', :struct => { :handler => { :another_nested_object => { :class => 'User', :name => 'marcelo' } } } }, :flat_check => true }
+        end
+
+        it { should == @job }
+      end
+
       context "correct yaml_conditions but WRONG class name" do
         before do
           @yaml_conditions = { :data => { :class => 'WrongModel', :struct => { :handler => { :class => 'User', :name => 'marcelo' } } } }

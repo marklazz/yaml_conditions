@@ -12,16 +12,22 @@ module Orms
     def find_with_yaml_conditions(*args)
       options = args.last.is_a?(::Hash) ? args.last : {}
       yaml_conditions = options[:yaml_conditions]
+      flat_check = yaml_conditions.delete(:flat_check) unless yaml_conditions.nil?
       return find_without_yaml_conditions(*args) if yaml_conditions.blank?
       __include_db_adapter_if_necessary__ if @db_adapter_included.nil?
       __include_delayedjob_adapter_if_necessary__ if defined?(Delayed::Job) && self == Delayed::Job && @delayed_adapter_included.nil?
       options = args.extract_options!
       adapted_args = args << refactor_options(options)
       selector = adapted_args.shift
-      result = find_without_yaml_conditions(:all, *adapted_args).select do |o|
+      result = find_without_yaml_conditions(flat_check ? selector : :all, *adapted_args)
+      if flat_check.present?
+        result
+      else
+        result = result.select do |o|
           __check_yaml_nested_hierarchy__(o, __prepare_yaml_conditions__(yaml_conditions))
+        end
+        selector == :all ? result : result.send(selector.to_sym)
       end
-      selector == :all ? result : result.send(selector.to_sym)
     end
 
     def refactor_options(options)

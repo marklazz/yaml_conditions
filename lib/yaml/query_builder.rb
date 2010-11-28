@@ -167,7 +167,7 @@ module Yaml
     end
 
     def __filter_yaml_attributes_to_check_on__(yaml_conditions)
-      yaml_conditions.reject { |k,v| k.to_s == 'class' }
+      yaml_conditions.reject { |k,v| k.to_s == 'class' || k.to_s == 'flat_check' }
     end
 
     def __join_yaml_conditions__(current_conditions, conditions)

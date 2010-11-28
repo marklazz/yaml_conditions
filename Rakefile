@@ -3,7 +3,7 @@ require 'echoe'
 
 # PACKAGING ============================================================
 
-Echoe.new('yaml_conditions', '0.0.0.4') do |p|
+Echoe.new('yaml_conditions', '0.0.0.5') do |p|
   p.description = ''
   p.url = 'http://github.com/marklazz/yaml_conditions'
   p.author = 'Marcelo Giorgi'

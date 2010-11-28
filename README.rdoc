@@ -33,6 +33,10 @@ On this last sample, the city attribute will be used to filter the objects on me
 BTW: All methods ActiveRecord::Base#{last, first, all} rely on ActiveRecord::Base#find, so we can use yaml_conditions with these methods too. As an example:
 Company.all(:yaml_conditions => { :data => { :address => { :street => '5551 LEAOPARD ST' } } }) behaves the same way as the first sample explained below.
 
+  Company.find(:last, :yaml_conditions => { :data => { :last_name => 'Marcelo' }, :flat_check => true}))
+
+Also when you don't want to check the hierarchy (for best performance), you can use the option :flat_check => true. Using this, you will receive the records that have the proper key/value for the leafs of the Hash structure (and it's all handled at database level by a mix of SQL's LIKE statements).
+
 == delayed_job
 
 Just to give you a little background, I build this gem/plugin just to filter my YAML objects created via delayed_job plugin ;)

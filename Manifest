@@ -14,7 +14,6 @@ lib/yaml/query_builder.rb
 lib/yaml/query_builder/sql/mysql.rb
 lib/yaml/query_builder/sql/postgresql.rb
 lib/yaml_conditions.rb
-out.txt
 spec/ar_spec_helper.rb
 spec/cases/orms/active_record/version_2_delayed_job_spec.rb
 spec/cases/orms/active_record/version_2_spec.rb
